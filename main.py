@@ -1,7 +1,8 @@
 import pygame, sys
 import datetime
 import hashlib
-#from pyfingerprint import PyFingerprint
+from pyfingerprint import PyFingerprint
+from mfrc522 import SimpleMFRC522
 from button import MyButton
 from inputbox import InputBox
 
@@ -11,7 +12,7 @@ pygame.init()
 SCREEN = pygame.display.set_mode((480, 320))
 pygame.display.set_caption("Menu")
 
-def registration_finger():
+def fingerprint_registration():
     SCREEN.fill("White")
     ## Search for a finger
 
@@ -22,6 +23,7 @@ def registration_finger():
         TEXT1 = pygame.font.Font("assets/font.ttf", 10).render("The fingerprint sensor could not be initialized", True, "Black")
         RECT1 = TEXT1.get_rect(center=(20, 10))
         SCREEN.blit(TEXT1, RECT1)
+        pygame.time.delay(5000)
         main()
 
 	## Tries to search the finger and calculate hash
@@ -45,9 +47,45 @@ def registration_finger():
         TEXT3 = pygame.font.Font("assets/font.ttf", 10).render("Operation failed", True, "Black")
         RECT3 = TEXT3.get_rect(center=(20, 10))
         SCREEN.blit(TEXT3, RECT3)
+        pygame.time.delay(5000)
         main()
 
-def attendance_finger():
+def registration_page():
+    
+    while True:
+
+        SCREEN.fill("White")
+        MAIN_MOUSE_POS = pygame.mouse.get_pos()
+
+        CURRENT_TIME_TEXT = pygame.font.Font("assets/font.ttf", 10).render(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), True, "Black")
+        CURRENT_TIME_RECT = CURRENT_TIME_TEXT.get_rect(center=(240, 20))
+        SCREEN.blit(CURRENT_TIME_TEXT, CURRENT_TIME_RECT)
+
+        CHOICE_TEXT = pygame.font.Font("assets/font.ttf", 15).render("Registration method", True, "Black")
+        CHOICE_RECT = CHOICE_TEXT.get_rect(center=(240, 100))
+        SCREEN.blit(CHOICE_TEXT, CHOICE_RECT)
+
+        FINGERPRINT_BUTTON = MyButton(image=None, pos=(150, 200), text_input="FINGERPRINT", font=pygame.font.Font("assets/font.ttf", 10), base_color="Black", hovering_color="Red")
+        FINGERPRINT_BUTTON.changeColor(MAIN_MOUSE_POS)
+        FINGERPRINT_BUTTON.update(SCREEN)
+
+        RFID_BUTTON = MyButton(image=None, pos=(330, 200), text_input="RFID", font=pygame.font.Font("assets/font.ttf", 10), base_color="Black", hovering_color="Red")
+        RFID_BUTTON.changeColor(MAIN_MOUSE_POS)
+        RFID_BUTTON.update(SCREEN)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if FINGERPRINT_BUTTON.checkForInput(MAIN_MOUSE_POS):
+                    fingerprint_register_page(None)
+                if RFID_BUTTON.checkForInput(MAIN_MOUSE_POS):
+                    rfid_register(None)
+
+        pygame.display.update()
+
+def fingerprint_attendance():
 	
     SCREEN.fill("White")
     ## Search for a finger
@@ -59,6 +97,7 @@ def attendance_finger():
         TEXT1 = pygame.font.Font("assets/font.ttf", 10).render("The fingerprint sensor could not be initialized", True, "Black")
         RECT1 = TEXT1.get_rect(center=(20, 10))
         SCREEN.blit(TEXT1, RECT1)
+        pygame.time.delay(5000)
         main()
 
 	## Tries to search the finger and calculate hash
@@ -80,6 +119,7 @@ def attendance_finger():
             TEXT2 = pygame.font.Font("assets/font.ttf", 10).render("Do not match", True, "Black")
             RECT2 = TEXT1.get_rect(center=(20, 10))
             SCREEN.blit(TEXT2, RECT2)
+            pygame.time.delay(5000)
             main()
         else:
 			## Create Hash Value for finger
@@ -100,7 +140,7 @@ def attendance_finger():
         SCREEN.blit(TEXT3, RECT3)
         main()
 
-def enterName():
+def enterName(n):
     while True:
         SCREEN.fill("Gray")
         rect = pygame.draw.rect(SCREEN, "White", pygame.Rect(0, 150, 480, 170))
@@ -117,7 +157,10 @@ def enterName():
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
-                        register (widget.returntext())
+                        if n==0:
+                            fingerprint_register_page (widget.returntext())
+                        else:
+                            rfid_register(widget.returntext())
                 widget.handle_event(event)
             widget.draw(SCREEN)
             pygame.display.flip()
@@ -157,7 +200,7 @@ def popup(choice):
 
         pygame.display.update()
 
-def register(text):
+def fingerprint_register_page (text):
     
     while True:
         
@@ -218,9 +261,9 @@ def register(text):
                         #popup(0)
                     popup(0)
                 if SCAN.checkForInput(REGISTER_MOUSE_POS):
-                    hash = registration_finger()
+                    hash = fingerprint_registration()
                 if ENTERNAME.checkForInput(REGISTER_MOUSE_POS):
-                    enterName()
+                    enterName(0)
         if hash!=None:
             pygame.draw.rect(SCREEN, "White", pygame.Rect(20, 215, 200, 20),  2) 
             FINGERPRINT_HASH = pygame.font.Font("assets/font.ttf", 10).render(str(hash), True, "Black")
@@ -276,6 +319,131 @@ def success(hash):
         pygame.time.delay(5000)
         main()
 
+def rfid_attendance():
+    SCREEN.fill("White")
+    reader = SimpleMFRC522()
+    try: 
+        rfid_id, name = reader.read()
+    except:
+        TEXT = pygame.font.Font("assets/font.ttf", 10).render("User not found", True, "Black")
+        RECT = TEXT.get_rect(center=(20, 10))
+        SCREEN.blit(TEXT, RECT)
+        pygame.time.delay(5000)
+        main()
+    else:
+        CURRENT_TIME_TEXT = pygame.font.Font("assets/font.ttf", 10).render(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), True, "Black")
+        CURRENT_TIME_RECT = CURRENT_TIME_TEXT.get_rect(center=(240, 20))
+        SCREEN.blit(CURRENT_TIME_TEXT, CURRENT_TIME_RECT)
+
+        TEXT1 = pygame.font.Font("assets/font.ttf", 10).render("Check in successfully!", True, "Black")
+        RECT1 = TEXT1.get_rect(center=(120, 70))
+        SCREEN.blit(TEXT1, RECT1)
+    
+        NAME_TEXT = pygame.font.Font("assets/font.ttf", 10).render("Name: "+name, True, "Black")
+        NAME_RECT = NAME_TEXT.get_rect(center=(120, 110))
+        SCREEN.blit(NAME_TEXT, NAME_RECT)
+        
+        id="123" #take from database based on name or rfid_id
+        ID_TEXT = pygame.font.Font("assets/font.ttf", 10).render("ID: "+id, True, "Black")
+        ID_RECT = ID_TEXT.get_rect(center=(120, 150))
+        SCREEN.blit(ID_TEXT, ID_RECT)
+
+        TEXT2 = pygame.font.Font("assets/font.ttf", 10).render("Your check in time:", True, "Black")
+        RECT2 = TEXT1.get_rect(center=(120, 190))
+        SCREEN.blit(TEXT2, RECT2)
+
+        #better to take the value of check in time from database
+        CHECKIN_TEXT = pygame.font.Font("assets/font.ttf", 10).render(datetime.datetime.now().strftime("%H:%M"), True, "Black")
+        CHECKIN_RECT = CHECKIN_TEXT.get_rect(center=(120, 220))
+        SCREEN.blit(CHECKIN_TEXT, CHECKIN_RECT)
+
+        #take from database 
+        IMAGE = pygame.image.load('assets/Square.png')
+        IMAGE = pygame.transform.scale(IMAGE, (200, 150))
+        IMAGE_RECT = IMAGE.get_rect(center=(360, 160))
+        SCREEN.blit(IMAGE, IMAGE_RECT)    
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        pygame.display.update()
+        pygame.time.delay(5000)
+        main()
+  
+def rfid_register(text):
+    while True:
+        
+        REGISTER_MOUSE_POS = pygame.mouse.get_pos()
+        SCREEN.fill("White")
+
+        CURRENT_TIME_TEXT = pygame.font.Font("assets/font.ttf", 10).render(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), True, "Black")
+        CURRENT_TIME_RECT = CURRENT_TIME_TEXT.get_rect(center=(240, 20))
+        SCREEN.blit(CURRENT_TIME_TEXT, CURRENT_TIME_RECT)
+
+        TEXT1 = pygame.font.Font("assets/font.ttf", 10).render("Please type your ID", True, "Black")
+        RECT1 = TEXT1.get_rect(center=(120, 70))
+        SCREEN.blit(TEXT1, RECT1)
+
+        if text == None:
+            pygame.draw.rect(SCREEN, "Black", pygame.Rect(20, 100, 200, 20),  2)
+        else:
+            #name should be stored to the database
+            name = pygame.font.Font("assets/font.ttf", 20).render(text, True, "Black")
+            SCREEN.blit(name, name.get_rect(center=(120, 110)))
+
+        ENTERNAME = MyButton(image=None,pos=(120, 140), text_input="ENTER", font=pygame.font.Font("assets/font.ttf", 10), base_color="Blue", hovering_color="Black")
+        ENTERNAME.changeColor(REGISTER_MOUSE_POS)
+        ENTERNAME.update(SCREEN)
+
+        TEXT2 = pygame.font.Font("assets/font.ttf", 10).render("Please scan your", True, "Black")
+        RECT2 = TEXT1.get_rect(center=(130, 170))
+        SCREEN.blit(TEXT2, RECT2)
+        TEXT3 = pygame.font.Font("assets/font.ttf", 10).render("fingerprint!", True, "Black")
+        RECT3 = TEXT3.get_rect(center=(120, 185))
+        SCREEN.blit(TEXT3, RECT3)
+
+        pygame.draw.rect(SCREEN, "Black", pygame.Rect(20, 215, 200, 20),  2)
+        SCAN = MyButton(image=None,pos=(120, 255), text_input="SCAN", font=pygame.font.Font("assets/font.ttf", 10), base_color="Blue", hovering_color="Black")
+        SCAN.changeColor(REGISTER_MOUSE_POS)
+        SCAN.update(SCREEN)
+        
+        IMAGE = pygame.image.load('assets/Square.png')
+        IMAGE = pygame.transform.scale(IMAGE, (200, 150))
+        IMAGE_RECT = IMAGE.get_rect(center=(360, 160))
+        SCREEN.blit(IMAGE, IMAGE_RECT)
+
+        SUBMIT = MyButton(image=None,pos=(120, 300), text_input="SUBMIT", font=pygame.font.Font("assets/font.ttf", 10), base_color="Black", hovering_color="Red")
+        SUBMIT.changeColor(REGISTER_MOUSE_POS)
+        SUBMIT.update(SCREEN)
+
+        rfid_id=None
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if SUBMIT.checkForInput(REGISTER_MOUSE_POS):
+                    #if there is a record:
+                        #popup(1)
+                    #else:
+                        #popup(0)
+                    popup(0)
+                if SCAN.checkForInput(REGISTER_MOUSE_POS):
+                    reader = SimpleMFRC522()
+                    reader.write(name)
+                    rfid_id, name = reader.read()
+                if ENTERNAME.checkForInput(REGISTER_MOUSE_POS):
+                    enterName(1)
+        if rfid_id!=None:
+            pygame.draw.rect(SCREEN, "White", pygame.Rect(20, 215, 200, 20),  2) 
+            RFID_ID_TEXT = pygame.font.Font("assets/font.ttf", 10).render(str(hash), True, "Black")
+            RFID_ID_TEXT_RECT = RFID_ID_TEXT.get_rect(center=(120, 225))
+            SCREEN.blit(RFID_ID_TEXT, RFID_ID_TEXT_RECT)
+        pygame.display.update()    
+
 def main():
     
     while True:
@@ -287,11 +455,23 @@ def main():
         CURRENT_TIME_RECT = CURRENT_TIME_TEXT.get_rect(center=(240, 20))
         SCREEN.blit(CURRENT_TIME_TEXT, CURRENT_TIME_RECT)
 
-        SCAN_BUTTON = MyButton(image=None, pos=(240, 180), text_input="SCAN", font=pygame.font.Font("assets/font.ttf", 10), base_color="Black", hovering_color="Red")
-        SCAN_BUTTON.changeColor(MAIN_MOUSE_POS)
-        SCAN_BUTTON.update(SCREEN)
+        WELCOME_TEXT = pygame.font.Font("assets/font.ttf", 25).render("Welcome", True, "Black")
+        WELCOME_RECT = WELCOME_TEXT.get_rect(center=(240, 110))
+        SCREEN.blit(WELCOME_TEXT, WELCOME_RECT)
 
-        REGISTER_BUTTON = MyButton(image=None, pos=(240, 140), text_input="REGISTER", font=pygame.font.Font("assets/font.ttf", 10), base_color="Black", hovering_color="Red")
+        CHOICE_TEXT = pygame.font.Font("assets/font.ttf", 15).render("Scanning method", True, "Black")
+        CHOICE_RECT = CHOICE_TEXT.get_rect(center=(240, 160))
+        SCREEN.blit(CHOICE_TEXT, CHOICE_RECT)
+
+        FINGERPRINT_BUTTON = MyButton(image=None, pos=(150, 220), text_input="FINGERPRINT", font=pygame.font.Font("assets/font.ttf", 10), base_color="Black", hovering_color="Red")
+        FINGERPRINT_BUTTON.changeColor(MAIN_MOUSE_POS)
+        FINGERPRINT_BUTTON.update(SCREEN)
+
+        RFID_BUTTON = MyButton(image=None, pos=(330, 220), text_input="RFID", font=pygame.font.Font("assets/font.ttf", 10), base_color="Black", hovering_color="Red")
+        RFID_BUTTON.changeColor(MAIN_MOUSE_POS)
+        RFID_BUTTON.update(SCREEN)
+
+        REGISTER_BUTTON = MyButton(image=None, pos=(400, 50), text_input="REGISTRATION", font=pygame.font.Font("assets/font.ttf", 10), base_color="Black", hovering_color="Red")
         REGISTER_BUTTON.changeColor(MAIN_MOUSE_POS)
         REGISTER_BUTTON.update(SCREEN)
         
@@ -301,14 +481,16 @@ def main():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if REGISTER_BUTTON.checkForInput(MAIN_MOUSE_POS):
-                    register(None)
-                if SCAN_BUTTON.checkForInput(MAIN_MOUSE_POS):
-                    attendance_finger()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_0:  #if you press 0, register
-                    register(None)
-                if event.key == pygame.K_1: #if ypu press 1, scan 
-                    attendance_finger()
+                    registration_page()
+                if FINGERPRINT_BUTTON.checkForInput(MAIN_MOUSE_POS):
+                    fingerprint_attendance()
+                if RFID_BUTTON.checkForInput(MAIN_MOUSE_POS):
+                    rfid_attendance()
+            #if event.type == pygame.KEYDOWN:
+                #if event.key == pygame.K_0:  #if you press 0, register
+                 #   register(None)
+                #if event.key == pygame.K_1: #if ypu press 1, scan 
+                 #   attendance_finger()
         pygame.display.update()
 
 main()
