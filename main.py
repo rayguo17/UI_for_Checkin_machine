@@ -1,6 +1,5 @@
 import pygame, sys,os
 import datetime
-import hashlib
 from pyfingerprint.pyfingerprint import PyFingerprint
 from mfrc522 import SimpleMFRC522
 from button import MyButton
@@ -381,6 +380,14 @@ def rfid_attendance():
     reader = SimpleMFRC522()
     try: 
         rfid_id, name = reader.read()
+        #insert data reading method
+        print(name)
+        query_params = {"fingerprint":rfid_id}
+        url = "http://192.168.1.20:4523/mock/976143/person/list"
+        response = requests.get(url,params=query_params)
+        print(response.json())
+        data = response.json()[0]
+        
     except:
         TEXT = pygame.font.Font("assets/font.ttf", 10).render("User not found", True, BLACK)
         RECT = TEXT.get_rect(center=(20, 10))
@@ -395,13 +402,18 @@ def rfid_attendance():
         TEXT1 = pygame.font.Font("assets/font.ttf", 10).render("Check in successfully!", True, BLACK)
         RECT1 = TEXT1.get_rect(center=(120, 70))
         SCREEN.blit(TEXT1, RECT1)
-    
-        NAME_TEXT = pygame.font.Font("assets/font.ttf", 10).render("Name: "+name, True, BLACK)
+        full_name = "Name: "
+        name = data["name"]
+        full_name = full_name+name
+        print(len(name))
+        print(full_name)
+        NAME_TEXT = pygame.font.Font("assets/font.ttf", 10).render(full_name, True, BLACK)
         NAME_RECT = NAME_TEXT.get_rect(center=(120, 110))
         SCREEN.blit(NAME_TEXT, NAME_RECT)
+        print("show name!")
         
-        id="123" #take from database based on name or rfid_id
-        ID_TEXT = pygame.font.Font("assets/font.ttf", 10).render("ID: "+id, True, BLACK)
+        id=data["id"] #take from database based on name or rfid_id
+        ID_TEXT = pygame.font.Font("assets/font.ttf", 10).render("ID: "+str(id), True, BLACK)
         ID_RECT = ID_TEXT.get_rect(center=(120, 150))
         SCREEN.blit(ID_TEXT, ID_RECT)
 
@@ -430,6 +442,8 @@ def rfid_attendance():
         main()
   
 def rfid_register(text):
+    rfid_id= None
+    name = None
     while True:
         
         REGISTER_MOUSE_POS = pygame.mouse.get_pos()
@@ -475,7 +489,7 @@ def rfid_register(text):
         SUBMIT.changeColor(REGISTER_MOUSE_POS)
         SUBMIT.update(SCREEN)
 
-        rfid_id=None
+        
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -483,20 +497,38 @@ def rfid_register(text):
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if SUBMIT.checkForInput(REGISTER_MOUSE_POS):
-                    #if there is a record:
-                        #popup(1)
-                    #else:
-                        #popup(0)
-                    popup(0)
+                    if text == None :
+                        continue
+                    else:
+                        # print(text)
+                        # print(int(text))
+                        user_id = int(text)
+                        url = "http://192.168.1.20:4523/mock/976143/person/list"
+                        query_params = {"id":user_id}
+                        response = requests.get(url,params=query_params)
+                        print("response:",response.json())
+                        
+                        if(response.status_code==404):
+                            popup(0)
+                        else:
+                            
+                            path = "http://192.168.1.20:4523/mock/976143/person/modify"
+                            # need response name
+                            data= {"id":user_id, "fingerprint": rfid_id }
+                            resp = requests.post(path,json=data)
+                            if(resp.status_code==200):
+                                popup(1)
+                            else:
+                                popup(0)
                 if SCAN.checkForInput(REGISTER_MOUSE_POS):
                     reader = SimpleMFRC522()
-                    reader.write(name)
+                    #reader.write(name)
                     rfid_id, name = reader.read()
                 if ENTERNAME.checkForInput(REGISTER_MOUSE_POS):
                     enterName(1)
         if rfid_id!=None:
             pygame.draw.rect(SCREEN, WHITE, pygame.Rect(20, 215, 200, 20),  2) 
-            RFID_ID_TEXT = pygame.font.Font("assets/font.ttf", 10).render(str(hash), True, BLACK)
+            RFID_ID_TEXT = pygame.font.Font("assets/font.ttf", 10).render(str(rfid_id), True, BLACK)
             RFID_ID_TEXT_RECT = RFID_ID_TEXT.get_rect(center=(120, 225))
             SCREEN.blit(RFID_ID_TEXT, RFID_ID_TEXT_RECT)
         pygame.display.update()    
