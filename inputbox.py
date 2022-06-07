@@ -1,5 +1,5 @@
 import pygame
-
+BLACK=(0,0,0)
 class InputBox():
     
     def __init__(self, x, y):
@@ -28,7 +28,7 @@ class InputBox():
                     self.text += event.unicode
     
     def draw(self, screen):
-        text_image = self.font.render(self.text, True, "Black")
+        text_image = self.font.render(self.text, True, BLACK)
         text_rect = text_image.get_rect()
         self.rect.w = max(200, text_rect.w+10)
         pygame.draw.rect(screen, self.color, self.rect)
